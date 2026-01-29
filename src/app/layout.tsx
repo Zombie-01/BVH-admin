@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import type { Metadata, Viewport } from 'next';
 import '../styles/index.css';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -32,7 +32,7 @@ export default function RootLayout({
           <Toaster />
           <Sonner />
           <AuthGuard />
-          {children}
+          <Suspense>{children}</Suspense>
         </TooltipProvider>
 
         <script

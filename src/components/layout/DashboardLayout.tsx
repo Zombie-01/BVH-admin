@@ -17,11 +17,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <SidebarTrigger className="mr-4" />
             <h1 className="text-lg font-semibold text-foreground">Dashboard</h1>
             <div className="ml-auto">
-              <Suspense>
-                {/* SignOutButton is a client component */}
-                {/* @ts-ignore - dynamic import not required here */}
-                <SignOutButton />
-              </Suspense>
+              {/* SignOutButton is a client component */}
+              {/* @ts-ignore - dynamic import not required here */}
+              <SignOutButton />
             </div>
           </header>
           <div className="flex-1 p-6 overflow-auto">{children}</div>
