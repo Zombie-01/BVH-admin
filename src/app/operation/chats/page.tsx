@@ -1,0 +1,188 @@
+'use client';
+import { useState } from 'react';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { StatsCard } from '@/components/dashboard/StatsCard';
+import { mockChats, type Chat } from '@/data/mockChatData';
+import { MessageSquare, CheckCircle, Clock, XCircle, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { ChatDetailModal } from '@/components/modals/ChatDetailModal';
+
+export default function ChatLogs() {
+  const [search, setSearch] = useState('');
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const filteredChats = mockChats.filter(
+    (chat) =>
+      chat.user_name.toLowerCase().includes(search.toLowerCase()) ||
+      chat.store_name?.toLowerCase().includes(search.toLowerCase()) ||
+      chat.worker_name?.toLowerCase().includes(search.toLowerCase()) ||
+      chat.last_message.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const formatCurrency = (amount: number | null) => {
+    if (!amount) return '-';
+    return new Intl.NumberFormat('mn-MN', {
+      style: 'currency',
+      currency: 'MNT',
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const getStatusBadge = (status: Chat['status']) => {
+    switch (status) {
+      case 'completed':
+        return (
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Дууссан</Badge>
+        );
+      case 'agreed':
+        return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Тохирсон</Badge>;
+      case 'negotiating':
+        return (
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+            Хэлэлцэж буй
+          </Badge>
+        );
+      case 'cancelled':
+        return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Цуцлагдсан</Badge>;
+      default:
+        return null;
+    }
+  };
+
+  const getTypeBadge = (type: Chat['type']) => {
+    switch (type) {
+      case 'delivery':
+        return (
+          <Badge variant="outline" className="text-xs">
+            Хүргэлт
+          </Badge>
+        );
+      case 'service':
+        return (
+          <Badge variant="outline" className="text-xs">
+            Үйлчилгээ
+          </Badge>
+        );
+      case 'negotiation':
+        return (
+          <Badge variant="outline" className="text-xs">
+            Хэлэлцээр
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const handleViewChat = (chat: Chat) => {
+    setSelectedChat(chat);
+    setIsModalOpen(true);
+  };
+
+  const stats = {
+    total: mockChats.length,
+    completed: mockChats.filter((c) => c.status === 'completed').length,
+    negotiating: mockChats.filter((c) => c.status === 'negotiating').length,
+    cancelled: mockChats.filter((c) => c.status === 'cancelled').length,
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">Чат түүх</h2>
+            <p className="text-muted-foreground">Бүх харилцан яриаг харах</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <StatsCard
+            title="Нийт чат"
+            value={stats.total}
+            icon={<MessageSquare className="w-5 h-5 text-muted-foreground" />}
+          />
+          <StatsCard
+            title="Дууссан"
+            value={stats.completed}
+            icon={<CheckCircle className="w-5 h-5 text-green-500" />}
+          />
+          <StatsCard
+            title="Хэлэлцэж буй"
+            value={stats.negotiating}
+            icon={<Clock className="w-5 h-5 text-yellow-500" />}
+          />
+          <StatsCard
+            title="Цуцлагдсан"
+            value={stats.cancelled}
+            icon={<XCircle className="w-5 h-5 text-red-500" />}
+          />
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Чат хайх..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </div>
+
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <ScrollArea className="h-[500px]">
+            <div className="divide-y divide-border">
+              {filteredChats.map((chat) => (
+                <div
+                  key={chat.id}
+                  className="p-4 hover:bg-accent/50 transition-colors cursor-pointer"
+                  onClick={() => handleViewChat(chat)}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-foreground">{chat.user_name}</span>
+                        {chat.unread_count > 0 && (
+                          <Badge className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5">
+                            {chat.unread_count}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                        {chat.store_name && <span>{chat.store_name}</span>}
+                        {chat.worker_name && <span>{chat.worker_name}</span>}
+                      </div>
+                      <p className="text-sm text-muted-foreground truncate">{chat.last_message}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="flex items-center gap-2">
+                        {getTypeBadge(chat.type)}
+                        {getStatusBadge(chat.status)}
+                      </div>
+                      {chat.agreed_price && (
+                        <span className="text-sm font-medium text-green-400">
+                          {formatCurrency(chat.agreed_price)}
+                        </span>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(chat.created_at).toLocaleDateString('mn-MN')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+      </div>
+
+      <ChatDetailModal chat={selectedChat} open={isModalOpen} onOpenChange={setIsModalOpen} />
+    </DashboardLayout>
+  );
+}
