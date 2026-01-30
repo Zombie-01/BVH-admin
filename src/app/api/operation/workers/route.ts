@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     // 1) Optionally create a Supabase auth user when email is provided
     if (body.profile_email) {
       const email = String(body.profile_email).toLowerCase();
-      const password = body.password || Math.random().toString(36).slice(-8);
+      const password = body.password || "ChangeMe123!";
 
       const { data: authData, error: authError } = await supabaseServer.auth.admin.createUser({
         email,
