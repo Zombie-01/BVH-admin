@@ -30,23 +30,45 @@ function normalizeWorkers(raw: any[]): ServiceWorker[] {
 }
 
 function normalizeOrders(raw: any[]): Order[] {
-  return (raw || []).map((o: any) => ({
-    id: String(o.id),
-    user_id: o.user_id ?? o.customer_id ?? null,
-    user_name: o.customer_name ?? o.user_name ?? 'Хэрэглэгч',
-    store_id: o.store_id ?? null,
-    store_name: o.store_name ?? o.merchant_name ?? null,
-    worker_id: o.worker_id ?? null,
-    worker_name: o.worker_name ?? null,
-    type: (o.type as Order['type']) ?? (o.service_type as any) ?? 'delivery',
-    status: (o.status as Order['status']) ?? 'pending',
-    total_amount: o.total_amount ?? o.amount ?? 0,
-    delivery_address: o.delivery_address ?? o.address ?? null,
-    created_at: o.created_at ?? o.created_at,
-    delivery_lat: o.delivery_lat ?? o.delivery_lat,
-    delivery_lng: o.delivery_lng ?? o.delivery_lng,
-    ...o,
-  }));
+  return (raw || []).map((o: any) => {
+    // API uses `store` for merchant orders — treat as `delivery` in the UI
+    const mappedType: Order['type'] =
+      o.type === 'store'
+        ? 'delivery'
+        : ((o.type as Order['type']) ?? (o.service_type as any) ?? 'delivery');
+
+    const items = Array.isArray(o.order_items)
+      ? o.order_items
+      : Array.isArray(o.items)
+        ? o.items
+        : [];
+    const computedTotal = items.reduce(
+      (s: number, it: any) => s + Number(it.price ?? 0) * Number(it.quantity ?? 1),
+      0
+    );
+    const totalAmount = o.total_amount ?? o.amount ?? (computedTotal || 0);
+
+    return {
+      id: String(o.id),
+      user_id: o.user_id ?? o.customer_id ?? null,
+      user_name: o.customer_name ?? o.user_name ?? 'Хэрэглэгч',
+      store_id: o.store_id ?? null,
+      store_name: o.store_name ?? o.merchant_name ?? null,
+      worker_id: o.worker_id ?? null,
+      worker_name: o.worker_name ?? null,
+      type: mappedType,
+      status: (o.status as Order['status']) ?? 'pending',
+      total_amount: totalAmount,
+      delivery_address: o.delivery_address ?? o.address ?? null,
+      created_at: o.created_at ?? o.created_at,
+      delivery_lat: o.delivery_lat ?? o.delivery_lat,
+      delivery_lng: o.delivery_lng ?? o.delivery_lng,
+      // keep raw items for possible details view
+      order_items: items,
+      __raw: o,
+      ...o,
+    } as Order & { order_items?: any[]; __raw?: any };
+  });
 }
 
 export default function LiveOperations() {
