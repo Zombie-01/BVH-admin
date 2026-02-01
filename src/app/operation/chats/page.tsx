@@ -17,6 +17,34 @@ export default function ChatLogs() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Normalize server chat -> UI-friendly shape (safe fallbacks)
+  function normalizeChat(raw: any): Chat {
+    return {
+      id: String(raw.id),
+      order_id: raw.order_id ?? null,
+      user_id: raw.user_id ?? null,
+      user_name:
+        (raw.user_name ??
+          raw.user_name_full ??
+          raw.user?.name ??
+          String(raw.user_id ?? '').slice(0, 8)) ||
+        'Хэрэглэгч',
+      store_id: raw.store_id ?? null,
+      store_name: raw.store_name ?? raw.store?.name ?? null,
+      worker_id: raw.worker_id ?? null,
+      worker_name: raw.worker_name ?? raw.worker?.name ?? null,
+      type: (raw.type === 'store' ? ('delivery' as const) : (raw.type as any)) ?? 'delivery',
+      status: (raw.status as any) ?? 'negotiating',
+      expected_price: raw.expected_price ?? null,
+      agreed_price: raw.agreed_price ?? null,
+      service_description: raw.service_description ?? null,
+      last_message: raw.last_message ?? '',
+      unread_count: Number(raw.unread_count ?? 0),
+      created_at: raw.created_at ?? raw.updated_at ?? new Date().toISOString(),
+      messages: Array.isArray(raw.messages) ? raw.messages : [],
+    } as Chat;
+  }
+
   useEffect(() => {
     let mounted = true;
     async function load() {
@@ -25,7 +53,8 @@ export default function ChatLogs() {
         const res = await fetch('/api/v1/chats?limit=200');
         const json = await res.json();
         if (!mounted) return;
-        setChats(json?.chats ?? []);
+        const normalized = (json?.chats ?? []).map(normalizeChat);
+        setChats(normalized);
       } catch (err) {
         console.error('Failed to load chats', err);
       } finally {
@@ -38,13 +67,23 @@ export default function ChatLogs() {
     };
   }, []);
 
-  const filteredChats = chats.filter(
-    (chat) =>
-      chat.user_name.toLowerCase().includes(search.toLowerCase()) ||
-      chat.store_name?.toLowerCase().includes(search.toLowerCase()) ||
-      chat.worker_name?.toLowerCase().includes(search.toLowerCase()) ||
-      chat.last_message.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredChats = chats.filter((chat) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      chat.id.toLowerCase().includes(q) ||
+      String(chat.user_id ?? '')
+        .toLowerCase()
+        .includes(q) ||
+      String(chat.store_id ?? '')
+        .toLowerCase()
+        .includes(q) ||
+      chat.user_name.toLowerCase().includes(q) ||
+      (chat.store_name ?? '').toLowerCase().includes(q) ||
+      (chat.worker_name ?? '').toLowerCase().includes(q) ||
+      (chat.last_message ?? '').toLowerCase().includes(q)
+    );
+  });
 
   const formatCurrency = (amount: number | null) => {
     if (!amount) return '-';
@@ -96,14 +135,43 @@ export default function ChatLogs() {
             Хэлэлцээр
           </Badge>
         );
+      // API may return `store` — treat as store/merchant chat
+      case 'store' as any:
+        return (
+          <Badge variant="outline" className="text-xs">
+            Дэлгүүр
+          </Badge>
+        );
       default:
         return null;
     }
   };
 
-  const handleViewChat = (chat: Chat) => {
-    setSelectedChat(chat);
+  const handleViewChat = async (chat: Chat) => {
+    // optimistic: open modal immediately with minimal data, then load messages
+    setSelectedChat({ ...chat, messages: chat.messages ?? [] });
     setIsModalOpen(true);
+
+    try {
+      const res = await fetch(`/api/v1/chats/${chat.id}/messages?limit=200`);
+      if (!res.ok) return;
+      const json = await res.json();
+      const messages = (json?.messages ?? []).map((m: any) => ({
+        id: String(m.id),
+        sender_id: m.sender_id,
+        sender_name: m.sender_name ?? String(m.sender_id ?? '').slice(0, 8),
+        sender_role: m.sender_role ?? 'user',
+        content: m.content ?? '',
+        message_type: m.message_type ?? 'text',
+        deal_amount: m.deal_amount ?? m.deal_amount ?? null,
+        created_at: m.created_at,
+        read: !!m.read,
+      }));
+
+      setSelectedChat((prev) => (prev ? { ...prev, messages } : { ...chat, messages }));
+    } catch (err) {
+      console.error('Failed to load chat messages', err);
+    }
   };
 
   const stats = {
