@@ -156,7 +156,7 @@ export default function ChatLogs() {
       const res = await fetch(`/api/v1/chats/${chat.id}/messages?limit=200`);
       if (!res.ok) return;
       const json = await res.json();
-      const messages = (json?.messages ?? []).map((m: any) => ({
+      const messages = (json?.data?.chats ?? []).map((m: any) => ({
         id: String(m.id ?? `${chat.id}-m-${Math.random().toString(36).slice(2, 8)}`),
         sender_id: m.sender_id ?? null,
         sender_name:
