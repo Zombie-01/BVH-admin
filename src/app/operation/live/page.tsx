@@ -94,7 +94,7 @@ export default function LiveOperations() {
 
         if (!mounted) return;
         setWorkers(normalizeWorkers(wJson?.workers ?? []));
-        setOrders(normalizeOrders(oJson?.orders ?? []));
+        setOrders(normalizeOrders(oJson?.data?.orders ?? []));
       } catch (err) {
         console.error('Failed to load live data', err);
       } finally {
