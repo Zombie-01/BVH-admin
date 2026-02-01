@@ -1,8 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatsCard } from '@/components/dashboard/StatsCard';
-import { mockChats, type Chat } from '@/data/mockChatData';
+import type { Chat } from '@/data/mockChatData';
 import { MessageSquare, CheckCircle, Clock, XCircle, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -14,8 +14,31 @@ export default function ChatLogs() {
   const [search, setSearch] = useState('');
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredChats = mockChats.filter(
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/v1/chats?limit=200');
+        const json = await res.json();
+        if (!mounted) return;
+        setChats(json?.chats ?? []);
+      } catch (err) {
+        console.error('Failed to load chats', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const filteredChats = chats.filter(
     (chat) =>
       chat.user_name.toLowerCase().includes(search.toLowerCase()) ||
       chat.store_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -84,10 +107,10 @@ export default function ChatLogs() {
   };
 
   const stats = {
-    total: mockChats.length,
-    completed: mockChats.filter((c) => c.status === 'completed').length,
-    negotiating: mockChats.filter((c) => c.status === 'negotiating').length,
-    cancelled: mockChats.filter((c) => c.status === 'cancelled').length,
+    total: chats.length,
+    completed: chats.filter((c) => c.status === 'completed').length,
+    negotiating: chats.filter((c) => c.status === 'negotiating').length,
+    cancelled: chats.filter((c) => c.status === 'cancelled').length,
   };
 
   return (

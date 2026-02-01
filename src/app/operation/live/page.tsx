@@ -4,66 +4,96 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { LiveMap } from '@/components/operation/LiveMap';
 import { OrderPanel } from '@/components/operation/OrderPanel';
 import { WorkerPanel } from '@/components/operation/WorkerPanel';
-import { mockWorkers, mockOrders, type ServiceWorker, type Order } from '@/data/mockData';
+import type { ServiceWorker, Order } from '@/data/mockData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Package, Users } from 'lucide-react';
 
-// Add location data to workers for the map (Ulaanbaatar coordinates)
-const workersWithLocation: ServiceWorker[] = mockWorkers.map((worker, index) => ({
-  ...worker,
-  lat: 47.9184 + (Math.random() - 0.5) * 0.05,
-  lng: 106.9177 + (Math.random() - 0.5) * 0.08,
-  current_task: worker.is_available ? undefined : 'Ажил гүйцэтгэж байна',
-}));
+// Fallback coordinates (Ulaanbaatar) and helper to ensure we have lat/lng for the map
+const UB_LAT = 47.9184;
+const UB_LNG = 106.9177;
+const jitter = (scale = 0.03) => (Math.random() - 0.5) * scale;
 
-// Add more pending orders for demo
-const pendingOrders: Order[] = [
-  ...mockOrders,
-  {
-    id: 'o5',
-    user_id: 'u5',
-    user_name: 'Өлзий Б.',
-    store_id: '1',
-    store_name: 'Хүнсний Дэлгүүр №1',
-    worker_id: null,
-    worker_name: null,
-    type: 'delivery',
-    status: 'pending',
-    total_amount: 85000,
-    delivery_address: 'Баянгол, 7-р хороо',
-    created_at: '2024-12-24',
-  },
-  {
-    id: 'o6',
-    user_id: 'u6',
-    user_name: 'Нямаа С.',
-    store_id: null,
-    store_name: null,
-    worker_id: null,
-    worker_name: null,
-    type: 'service',
-    status: 'pending',
-    total_amount: 50000,
-    delivery_address: 'Сонгинохайрхан, 20-р хороо',
-    created_at: '2024-12-24',
-  },
-];
+function normalizeWorkers(raw: any[]): ServiceWorker[] {
+  return (raw || []).map((w, i) => ({
+    id: String(w.id ?? `w-${i}`),
+    profile_name: w.profile?.name ?? w.profile_name ?? w.name ?? 'Ажилчин',
+    is_available: !!w.is_available,
+    lat: w.lat ?? w.location?.lat ?? UB_LAT + jitter(0.05),
+    lng: w.lng ?? w.location?.lng ?? UB_LNG + jitter(0.08),
+    specialty: w.specialty ?? null,
+    rating: w.rating ?? 0,
+    completed_jobs: w.completed_jobs ?? 0,
+    current_task: w.is_available ? undefined : (w.current_task ?? 'Ажил гүйцэтгэж байна'),
+    ...w,
+  }));
+}
+
+function normalizeOrders(raw: any[]): Order[] {
+  return (raw || []).map((o: any) => ({
+    id: String(o.id),
+    user_id: o.user_id ?? o.customer_id ?? null,
+    user_name: o.customer_name ?? o.user_name ?? 'Хэрэглэгч',
+    store_id: o.store_id ?? null,
+    store_name: o.store_name ?? o.merchant_name ?? null,
+    worker_id: o.worker_id ?? null,
+    worker_name: o.worker_name ?? null,
+    type: (o.type as Order['type']) ?? (o.service_type as any) ?? 'delivery',
+    status: (o.status as Order['status']) ?? 'pending',
+    total_amount: o.total_amount ?? o.amount ?? 0,
+    delivery_address: o.delivery_address ?? o.address ?? null,
+    created_at: o.created_at ?? o.created_at,
+    delivery_lat: o.delivery_lat ?? o.delivery_lat,
+    delivery_lng: o.delivery_lng ?? o.delivery_lng,
+    ...o,
+  }));
+}
 
 export default function LiveOperations() {
-  const [workers, setWorkers] = useState<ServiceWorker[]>(workersWithLocation);
-  const [orders, setOrders] = useState<Order[]>(pendingOrders);
+  const [workers, setWorkers] = useState<ServiceWorker[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [selectedWorker, setSelectedWorker] = useState<ServiceWorker | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Simulate real-time worker movement
+  // Fetch workers + pending orders from server APIs
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      setLoading(true);
+      try {
+        const [wRes, oRes] = await Promise.all([
+          fetch('/api/operation/workers'),
+          fetch('/api/v1/orders?status=pending&limit=50'),
+        ]);
+
+        const wJson = await wRes.json();
+        const oJson = await oRes.json();
+
+        if (!mounted) return;
+        setWorkers(normalizeWorkers(wJson?.workers ?? []));
+        setOrders(normalizeOrders(oJson?.orders ?? []));
+      } catch (err) {
+        console.error('Failed to load live data', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Small client-side simulation to make the map feel alive (no DB changes)
   useEffect(() => {
     const interval = setInterval(() => {
       setWorkers((prev) =>
         prev.map((worker) => ({
           ...worker,
-          lat: (worker.lat || 47.9184) + (Math.random() - 0.5) * 0.002,
-          lng: (worker.lng || 106.9177) + (Math.random() - 0.5) * 0.002,
+          lat: (worker.lat ?? UB_LAT) + (Math.random() - 0.5) * 0.002,
+          lng: (worker.lng ?? UB_LNG) + (Math.random() - 0.5) * 0.002,
         }))
       );
     }, 3000);
@@ -71,30 +101,56 @@ export default function LiveOperations() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleAssignWorker = (orderId: string, workerId: string) => {
-    const worker = workers.find((w) => w.id === workerId);
-    if (!worker) return;
-
+  const handleAssignWorker = async (orderId: string, workerId: string) => {
+    // optimistic UI update
+    const worker = workers.find((w) => w.id === workerId) ?? null;
     setOrders((prev) =>
       prev.map((order) =>
         order.id === orderId
           ? {
               ...order,
               worker_id: workerId,
-              worker_name: worker.profile_name,
+              worker_name: worker?.profile_name ?? null,
               status: 'confirmed' as const,
             }
           : order
       )
     );
-
     setWorkers((prev) =>
       prev.map((w) =>
         w.id === workerId ? { ...w, is_available: false, current_task: `Захиалга #${orderId}` } : w
       )
     );
-
     setSelectedOrder(null);
+
+    try {
+      const res = await fetch('/api/operation/assign', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ orderId, workerId }),
+      });
+      if (!res.ok) throw new Error('Assign request failed');
+      // refresh a subset to reconcile any server-side changes
+      const [wRes, oRes] = await Promise.all([
+        fetch('/api/operation/workers'),
+        fetch('/api/v1/orders?status=pending&limit=50'),
+      ]);
+      const wJson = await wRes.json();
+      const oJson = await oRes.json();
+      setWorkers(normalizeWorkers(wJson?.workers ?? []));
+      setOrders(normalizeOrders(oJson?.orders ?? []));
+    } catch (err) {
+      console.error('Assign failed, rolling back optimistic update', err);
+      // rollback: refetch
+      const [wRes, oRes] = await Promise.all([
+        fetch('/api/operation/workers'),
+        fetch('/api/v1/orders?limit=50'),
+      ]);
+      const wJson = await wRes.json();
+      const oJson = await oRes.json();
+      setWorkers(normalizeWorkers(wJson?.workers ?? []));
+      setOrders(normalizeOrders(oJson?.orders ?? []));
+    }
   };
 
   const availableWorkers = workers.filter((w) => w.is_available);
@@ -131,14 +187,18 @@ export default function LiveOperations() {
         {/* Main content */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
           {/* Map */}
-          <div className="lg:col-span-2 rounded-lg border border-border overflow-hidden bg-card">
-            <LiveMap
-              workers={workers}
-              orders={orders}
-              selectedWorker={selectedWorker}
-              selectedOrder={selectedOrder}
-              onSelectWorker={setSelectedWorker}
-            />
+          <div className="lg:col-span-2 rounded-lg border border-border overflow-hidden bg-card min-h-[300px] flex items-center justify-center">
+            {loading ? (
+              <div className="text-sm text-muted-foreground">Live data — ачаалж байна...</div>
+            ) : (
+              <LiveMap
+                workers={workers}
+                orders={orders}
+                selectedWorker={selectedWorker}
+                selectedOrder={selectedOrder}
+                onSelectWorker={setSelectedWorker}
+              />
+            )}
           </div>
 
           {/* Side panel */}
