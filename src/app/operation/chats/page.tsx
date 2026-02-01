@@ -53,7 +53,7 @@ export default function ChatLogs() {
         const res = await fetch('/api/v1/chats?limit=200');
         const json = await res.json();
         if (!mounted) return;
-        const normalized = (json?.chats ?? []).map(normalizeChat);
+        const normalized = (json?.data?.chats ?? []).map(normalizeChat);
         setChats(normalized);
       } catch (err) {
         console.error('Failed to load chats', err);
