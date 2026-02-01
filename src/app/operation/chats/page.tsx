@@ -157,14 +157,15 @@ export default function ChatLogs() {
       if (!res.ok) return;
       const json = await res.json();
       const messages = (json?.messages ?? []).map((m: any) => ({
-        id: String(m.id),
-        sender_id: m.sender_id,
-        sender_name: m.sender_name ?? String(m.sender_id ?? '').slice(0, 8),
-        sender_role: m.sender_role ?? 'user',
-        content: m.content ?? '',
-        message_type: m.message_type ?? 'text',
-        deal_amount: m.deal_amount ?? m.deal_amount ?? null,
-        created_at: m.created_at,
+        id: String(m.id ?? `${chat.id}-m-${Math.random().toString(36).slice(2, 8)}`),
+        sender_id: m.sender_id ?? null,
+        sender_name:
+          (m.sender_name ?? m.sender?.name ?? String(m.sender_id ?? '').slice(0, 8)) || 'Нэргүй',
+        sender_role: (m.sender_role as any) ?? 'user',
+        content: typeof m.content === 'string' ? m.content : String(m.content ?? ''),
+        message_type: (m.message_type as any) ?? 'text',
+        deal_amount: m.deal_amount ?? null,
+        created_at: m.created_at ?? m.created_at ?? new Date().toISOString(),
         read: !!m.read,
       }));
 

@@ -1,13 +1,8 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { type Chat } from "@/data/mockChatData";
-import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { type Chat } from '@/data/mockChatData';
+import { cn } from '@/lib/utils';
 
 interface ChatDetailModalProps {
   chat: Chat | null;
@@ -23,18 +18,24 @@ export function ChatDetailModal({ chat, open, onOpenChange }: ChatDetailModalPro
     return new Intl.NumberFormat('mn-MN', {
       style: 'currency',
       currency: 'MNT',
-      maximumFractionDigits: 0
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
   const getStatusBadge = (status: Chat['status']) => {
     switch (status) {
       case 'completed':
-        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Дууссан</Badge>;
+        return (
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Дууссан</Badge>
+        );
       case 'agreed':
         return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Тохирсон</Badge>;
       case 'negotiating':
-        return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Хэлэлцэж буй</Badge>;
+        return (
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+            Хэлэлцэж буй
+          </Badge>
+        );
       case 'cancelled':
         return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Цуцлагдсан</Badge>;
       default:
@@ -93,59 +94,74 @@ export function ChatDetailModal({ chat, open, onOpenChange }: ChatDetailModalPro
           {/* Messages */}
           <ScrollArea className="h-[400px] pr-4">
             <div className="space-y-4">
-              {chat.messages.map((message) => {
-                const isUserMessage = message.sender_role === 'user';
-                
-                return (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      "flex flex-col gap-1",
-                      isUserMessage ? "items-end" : "items-start"
-                    )}
-                  >
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className={cn(
-                        "px-2 py-0.5 rounded-full text-xs",
-                        getRoleColor(message.sender_role)
-                      )}>
-                        {message.sender_name}
-                      </span>
-                      <span>
-                        {new Date(message.created_at).toLocaleTimeString('mn-MN', {
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
+              {!Array.isArray(chat.messages) || chat.messages.length === 0 ? (
+                <div className="text-center py-12 text-sm text-muted-foreground">
+                  Диалог дээр мессеж байхгүй байна
+                </div>
+              ) : (
+                chat.messages.map((message) => {
+                  const isUserMessage = message.sender_role === 'user';
+
+                  const renderedTime = (() => {
+                    try {
+                      const d = new Date(message.created_at ?? Date.now());
+                      if (isNaN(d.getTime())) return '';
+                      return d.toLocaleTimeString('mn-MN', { hour: '2-digit', minute: '2-digit' });
+                    } catch {
+                      return '';
+                    }
+                  })();
+
+                  return (
+                    <div
+                      key={message.id}
+                      className={cn(
+                        'flex flex-col gap-1',
+                        isUserMessage ? 'items-end' : 'items-start'
+                      )}
+                    >
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span
+                          className={cn(
+                            'px-2 py-0.5 rounded-full text-xs',
+                            getRoleColor(message.sender_role)
+                          )}
+                        >
+                          {message.sender_name}
+                        </span>
+                        <span>{renderedTime}</span>
+                      </div>
+
+                      {message.message_type === 'price_offer' ? (
+                        <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-3 max-w-[80%]">
+                          <p className="text-sm text-yellow-400 font-medium">💰 Үнийн санал</p>
+                          <p className="text-lg font-bold text-yellow-300">
+                            {formatCurrency(message.deal_amount)}
+                          </p>
+                        </div>
+                      ) : message.message_type === 'deal_accepted' ? (
+                        <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-3 max-w-[80%]">
+                          <p className="text-sm text-green-400 font-medium">
+                            ✅ Тохиролцоо баталгаажсан
+                          </p>
+                          <p className="text-lg font-bold text-green-300">
+                            {formatCurrency(message.deal_amount)}
+                          </p>
+                        </div>
+                      ) : (
+                        <div
+                          className={cn(
+                            'rounded-lg p-3 max-w-[80%]',
+                            isUserMessage ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                          )}
+                        >
+                          <p className="text-sm">{message.content ?? ''}</p>
+                        </div>
+                      )}
                     </div>
-                    
-                    {message.message_type === 'price_offer' ? (
-                      <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-3 max-w-[80%]">
-                        <p className="text-sm text-yellow-400 font-medium">💰 Үнийн санал</p>
-                        <p className="text-lg font-bold text-yellow-300">
-                          {formatCurrency(message.deal_amount)}
-                        </p>
-                      </div>
-                    ) : message.message_type === 'deal_accepted' ? (
-                      <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-3 max-w-[80%]">
-                        <p className="text-sm text-green-400 font-medium">✅ Тохиролцоо баталгаажсан</p>
-                        <p className="text-lg font-bold text-green-300">
-                          {formatCurrency(message.deal_amount)}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className={cn(
-                        "rounded-lg p-3 max-w-[80%]",
-                        isUserMessage 
-                          ? "bg-primary text-primary-foreground" 
-                          : "bg-muted"
-                      )}>
-                        <p className="text-sm">{message.content}</p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </ScrollArea>
         </div>
