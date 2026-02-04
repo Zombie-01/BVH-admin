@@ -38,7 +38,7 @@ export async function POST(req: Request) {
         user_metadata: {
           name: body.profile?.name ?? null,
           phone: body.profile?.phone ?? null,
-          role: 'service_worker',
+          role: body?.specialty === 'driver' ? 'driver' : 'service_worker',
         },
       });
 
