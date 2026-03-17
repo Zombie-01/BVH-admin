@@ -63,6 +63,8 @@ export interface Order {
   status: 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled';
   total_amount: number;
   delivery_address: string | null;
+  delivery_lat: number | null;
+  delivery_lng: number | null;
   created_at: string;
 }
 

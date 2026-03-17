@@ -108,21 +108,6 @@ export default function LiveOperations() {
     };
   }, []);
 
-  // Small client-side simulation to make the map feel alive (no DB changes)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setWorkers((prev) =>
-        prev.map((worker) => ({
-          ...worker,
-          lat: (worker.lat ?? UB_LAT) + (Math.random() - 0.5) * 0.002,
-          lng: (worker.lng ?? UB_LNG) + (Math.random() - 0.5) * 0.002,
-        }))
-      );
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   const handleAssignWorker = async (orderId: string, workerId: string) => {
     // optimistic UI update
     const worker = workers.find((w) => w.id === workerId) ?? null;
