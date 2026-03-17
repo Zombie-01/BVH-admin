@@ -51,17 +51,14 @@ function BoundsFitter({ workers, orders }: { workers: ServiceWorker[]; orders: O
       }
     });
 
-    // Add order positions (using the generated positions)
-    const orderPositions = orders
+    // Add order positions using real delivery coordinates with fallback
+    orders
       .filter((o) => o.status === 'pending')
-      .map((order, index) => ({
-        lat: 47.8864 + Math.sin(index * 1.5) * 0.02,
-        lng: 106.9057 + Math.cos(index * 1.5) * 0.04,
-      }));
-
-    orderPositions.forEach((order) => {
-      allPositions.push([order.lat, order.lng]);
-    });
+      .forEach((order, index) => {
+        const lat = order.delivery_lat ?? 47.8864 + Math.sin(index * 1.5) * 0.02;
+        const lng = order.delivery_lng ?? 106.9057 + Math.cos(index * 1.5) * 0.04;
+        allPositions.push([lat, lng]);
+      });
 
     if (allPositions.length > 0) {
       const bounds = L.latLngBounds(allPositions);

@@ -127,8 +127,13 @@ export function OrderModal({ order, open, onOpenChange }: OrderModalProps) {
                 <MapPin className="w-4 h-4" />
                 Хүргэлтийн хаяг
               </h4>
-              <div className="p-3 bg-muted/50 rounded-lg">
+              <div className="p-3 bg-muted/50 rounded-lg space-y-2">
                 <p>{order.delivery_address}</p>
+                {(order.delivery_lat || order.delivery_lng) && (
+                  <p className="text-xs text-muted-foreground font-mono">
+                    {order.delivery_lat?.toFixed(6)}, {order.delivery_lng?.toFixed(6)}
+                  </p>
+                )}
               </div>
             </div>
           )}

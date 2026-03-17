@@ -60,9 +60,9 @@ function normalizeOrders(raw: any[]): Order[] {
       status: (o.status as Order['status']) ?? 'pending',
       total_amount: totalAmount,
       delivery_address: o.delivery_address ?? o.address ?? null,
-      created_at: o.created_at ?? o.created_at,
-      delivery_lat: o.delivery_lat ?? o.delivery_lat,
-      delivery_lng: o.delivery_lng ?? o.delivery_lng,
+      created_at: o.created_at ?? null,
+      delivery_lat: o.delivery_lat ?? null,
+      delivery_lng: o.delivery_lng ?? null,
       // keep raw items for possible details view
       order_items: items,
       __raw: o,
