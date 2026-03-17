@@ -7,7 +7,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+} from '@/components/ui/alert-dialog';
 
 interface DeleteConfirmModalProps {
   open: boolean;
@@ -21,12 +21,12 @@ export function DeleteConfirmModal({
   open,
   onOpenChange,
   onConfirm,
-  title = "Устгах уу?",
-  description = "Энэ үйлдлийг буцаах боломжгүй. Та үүнийг устгахдаа итгэлтэй байна уу?",
+  title = 'Устгах уу?',
+  description = 'Энэ үйлдлийг буцаах боломжгүй. Та үүнийг устгахдаа итгэлтэй байна уу?',
 }: DeleteConfirmModalProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className="w-full max-w-sm">
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>

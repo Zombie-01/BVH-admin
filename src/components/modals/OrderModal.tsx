@@ -4,11 +4,11 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { type Order } from "@/data/mockData";
-import { Package, User, Store, Wrench, MapPin, Calendar } from "lucide-react";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { type Order } from '@/data/mockData';
+import { Package, User, Store, Wrench, MapPin, Calendar } from 'lucide-react';
 
 interface OrderModalProps {
   order: Order | null;
@@ -23,20 +23,32 @@ export function OrderModal({ order, open, onOpenChange }: OrderModalProps) {
     return new Intl.NumberFormat('mn-MN', {
       style: 'currency',
       currency: 'MNT',
-      maximumFractionDigits: 0
+      maximumFractionDigits: 0,
     }).format(amount);
   };
 
   const getStatusBadge = (status: Order['status']) => {
     switch (status) {
       case 'completed':
-        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Дууссан</Badge>;
+        return (
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Дууссан</Badge>
+        );
       case 'in_progress':
-        return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Явагдаж буй</Badge>;
+        return (
+          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Явагдаж буй</Badge>
+        );
       case 'pending':
-        return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Хүлээгдэж буй</Badge>;
+        return (
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+            Хүлээгдэж буй
+          </Badge>
+        );
       case 'confirmed':
-        return <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">Баталгаажсан</Badge>;
+        return (
+          <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
+            Баталгаажсан
+          </Badge>
+        );
       case 'cancelled':
         return <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Цуцлагдсан</Badge>;
       default:
@@ -47,9 +59,19 @@ export function OrderModal({ order, open, onOpenChange }: OrderModalProps) {
   const getTypeBadge = (type: Order['type']) => {
     switch (type) {
       case 'delivery':
-        return <Badge variant="outline"><Package className="w-3 h-3 mr-1" />Хүргэлт</Badge>;
+        return (
+          <Badge variant="outline">
+            <Package className="w-3 h-3 mr-1" />
+            Хүргэлт
+          </Badge>
+        );
       case 'service':
-        return <Badge variant="outline"><Wrench className="w-3 h-3 mr-1" />Үйлчилгээ</Badge>;
+        return (
+          <Badge variant="outline">
+            <Wrench className="w-3 h-3 mr-1" />
+            Үйлчилгээ
+          </Badge>
+        );
       default:
         return null;
     }
@@ -57,8 +79,8 @@ export function OrderModal({ order, open, onOpenChange }: OrderModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="sticky top-0 bg-background z-10 pb-2">
           <div className="flex items-center justify-between">
             <DialogTitle>Захиалгын дэлгэрэнгүй</DialogTitle>
             <div className="flex items-center gap-2">
@@ -147,7 +169,7 @@ export function OrderModal({ order, open, onOpenChange }: OrderModalProps) {
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="sticky bottom-0 bg-background z-10 border-t pt-4 mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Хаах
           </Button>

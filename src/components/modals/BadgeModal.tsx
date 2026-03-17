@@ -13,7 +13,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { type BadgeType } from '@/data/mockData';
 
-
 interface BadgeModalProps {
   badge: BadgeType | null;
   mode: 'view' | 'edit' | 'create';
@@ -61,12 +60,12 @@ export function BadgeModal({ badge, mode, open, onOpenChange, onSave }: BadgeMod
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="sticky top-0 bg-background z-10 pb-2">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-2">
           <div className="space-y-2">
             <Label htmlFor="name">Нэр</Label>
             <Input

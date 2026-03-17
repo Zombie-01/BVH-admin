@@ -114,12 +114,12 @@ export function StoreModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="sticky top-0 bg-background z-10 pb-2">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-2">
           {isViewMode && store && (
             <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
               <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
