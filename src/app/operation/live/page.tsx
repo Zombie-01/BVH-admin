@@ -1,13 +1,26 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { LiveMap } from '@/components/operation/LiveMap';
+import dynamic from 'next/dynamic';
 import { OrderPanel } from '@/components/operation/OrderPanel';
 import { WorkerPanel } from '@/components/operation/WorkerPanel';
 import type { ServiceWorker, Order } from '@/data/mockData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Package, Users } from 'lucide-react';
+
+// Dynamically import LiveMap to prevent window is not defined error during SSR
+const LiveMap = dynamic(
+  () => import('@/components/operation/LiveMap').then((mod) => ({ default: mod.LiveMap })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-sm text-muted-foreground flex items-center justify-center h-full">
+        Live gas... ачаалж байна...
+      </div>
+    ),
+  }
+);
 
 // Fallback coordinates (Ulaanbaatar) and helper to ensure we have lat/lng for the map
 const UB_LAT = 47.9184;
@@ -76,13 +89,11 @@ export default function LiveOperations() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedWorker, setSelectedWorker] = useState<ServiceWorker | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [loading, setLoading] = useState(true);
 
   // Fetch workers + pending orders from server APIs
   useEffect(() => {
     let mounted = true;
     async function load() {
-      setLoading(true);
       try {
         const [wRes, oRes] = await Promise.all([
           fetch('/api/operation/workers'),
@@ -97,8 +108,6 @@ export default function LiveOperations() {
         setOrders(normalizeOrders(oJson?.data?.orders ?? []));
       } catch (err) {
         console.error('Failed to load live data', err);
-      } finally {
-        if (mounted) setLoading(false);
       }
     }
 
@@ -195,17 +204,13 @@ export default function LiveOperations() {
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0">
           {/* Map */}
           <div className="lg:col-span-2 rounded-lg border border-border overflow-hidden bg-card min-h-[300px] flex items-center justify-center">
-            {loading ? (
-              <div className="text-sm text-muted-foreground">Live data — ачаалж байна...</div>
-            ) : (
-              <LiveMap
-                workers={workers}
-                orders={orders}
-                selectedWorker={selectedWorker}
-                selectedOrder={selectedOrder}
-                onSelectWorker={setSelectedWorker}
-              />
-            )}
+            <LiveMap
+              workers={workers}
+              orders={orders}
+              selectedWorker={selectedWorker}
+              selectedOrder={selectedOrder}
+              onSelectWorker={setSelectedWorker}
+            />
           </div>
 
           {/* Side panel */}
